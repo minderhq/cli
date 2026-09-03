@@ -49,8 +49,26 @@ def cmd_status(args: argparse.Namespace) -> Any:
     return _client(args).status()
 
 
-def cmd_plugins(args: argparse.Namespace) -> Any:
+def cmd_plugins_list(args: argparse.Namespace) -> Any:
     return _client(args).plugins()
+
+
+def _parse_set(pairs: List[str]) -> dict:
+    updates = {}
+    for pair in pairs or []:
+        if "=" not in pair:
+            raise MinderError(f"--set expects KEY=VALUE, got {pair!r}")
+        key, value = pair.split("=", 1)
+        updates[key] = value
+    return updates
+
+
+def cmd_plugins_config(args: argparse.Namespace) -> Any:
+    client = _client(args)
+    updates = _parse_set(args.set)
+    if updates:
+        return client.set_plugin_config(args.name, updates)
+    return client.plugin_config(args.name)
 
 
 def cmd_rag_kbs(args: argparse.Namespace) -> Any:
@@ -116,9 +134,22 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("status", help="every service's health").set_defaults(
         func=cmd_status
     )
-    sub.add_parser("plugins", help="list registered plugins").set_defaults(
-        func=cmd_plugins
+    p_plugins = sub.add_parser("plugins", help="list + configure plugins")
+    plugins_sub = p_plugins.add_subparsers(dest="plugins_command", required=True)
+    plugins_sub.add_parser("list", help="list registered plugins").set_defaults(
+        func=cmd_plugins_list
     )
+    p_cfg = plugins_sub.add_parser(
+        "config", help="show a plugin's config, or --set KEY=VALUE to update it"
+    )
+    p_cfg.add_argument("name")
+    p_cfg.add_argument(
+        "--set",
+        action="append",
+        metavar="KEY=VALUE",
+        help="update a config key (repeatable)",
+    )
+    p_cfg.set_defaults(func=cmd_plugins_config)
     # ── rag <kbs|create-kb|pipelines|query> ───────────────────────────────────
     p_rag = sub.add_parser("rag", help="knowledge bases, pipelines, and queries")
     rag_sub = p_rag.add_subparsers(dest="rag_command", required=True)
