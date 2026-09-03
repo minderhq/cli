@@ -44,7 +44,12 @@ class MinderClient:
         return headers
 
     def request(
-        self, method: str, path: str, *, json_body: Optional[dict] = None
+        self,
+        method: str,
+        path: str,
+        *,
+        json_body: Optional[dict] = None,
+        params: Optional[dict] = None,
     ) -> Any:
         url = f"{self.base_url}{path}"
         try:
@@ -53,6 +58,7 @@ class MinderClient:
                 url,
                 headers=self._headers(),
                 json=json_body,
+                params=params,
                 timeout=self.timeout,
             )
         except httpx.HTTPError as exc:
@@ -82,3 +88,31 @@ class MinderClient:
 
     def plugins(self) -> Any:
         return self.request("GET", "/v1/plugins")
+
+    # ── RAG ───────────────────────────────────────────────────────────────────
+    def rag_kbs(self, limit: int = 100) -> Any:
+        return self.request("GET", "/v1/rag/knowledge-bases", params={"limit": limit})
+
+    def create_kb(self, name: str, description: str) -> Any:
+        return self.request(
+            "POST",
+            "/v1/rag/knowledge-base",
+            json_body={"name": name, "description": description},
+        )
+
+    def rag_pipelines(self, limit: int = 100) -> Any:
+        return self.request("GET", "/v1/rag/pipeline", params={"limit": limit})
+
+    def rag_query(self, pipeline_id: str, question: str, top_k: int = 3) -> Any:
+        return self.request(
+            "POST",
+            f"/v1/rag/pipeline/{pipeline_id}/query",
+            json_body={"question": question, "top_k": top_k},
+        )
+
+    # ── models ────────────────────────────────────────────────────────────────
+    def models_list(self, limit: int = 500) -> Any:
+        return self.request("GET", "/v1/models", params={"limit": limit})
+
+    def models_pull(self, model_id: str) -> Any:
+        return self.request("POST", "/v1/models", json_body={"model_id": model_id})

@@ -54,6 +54,30 @@ def cmd_plugins(args: argparse.Namespace) -> Any:
     return _client(args).plugins()
 
 
+def cmd_rag_kbs(args: argparse.Namespace) -> Any:
+    return _client(args).rag_kbs(limit=args.limit)
+
+
+def cmd_rag_create_kb(args: argparse.Namespace) -> Any:
+    return _client(args).create_kb(args.name, args.description)
+
+
+def cmd_rag_pipelines(args: argparse.Namespace) -> Any:
+    return _client(args).rag_pipelines(limit=args.limit)
+
+
+def cmd_rag_query(args: argparse.Namespace) -> Any:
+    return _client(args).rag_query(args.pipeline_id, args.question, top_k=args.top_k)
+
+
+def cmd_models_list(args: argparse.Namespace) -> Any:
+    return _client(args).models_list()
+
+
+def cmd_models_pull(args: argparse.Namespace) -> Any:
+    return _client(args).models_pull(args.model_id)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="minder", description="Minder CLI")
     parser.add_argument("--version", action="version", version=f"minder {__version__}")
@@ -78,6 +102,33 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("plugins", help="list registered plugins").set_defaults(
         func=cmd_plugins
     )
+    # ── rag <kbs|create-kb|pipelines|query> ───────────────────────────────────
+    p_rag = sub.add_parser("rag", help="knowledge bases, pipelines, and queries")
+    rag_sub = p_rag.add_subparsers(dest="rag_command", required=True)
+    r_kbs = rag_sub.add_parser("kbs", help="list knowledge bases")
+    r_kbs.add_argument("--limit", type=int, default=100)
+    r_kbs.set_defaults(func=cmd_rag_kbs)
+    r_new = rag_sub.add_parser("create-kb", help="create a knowledge base")
+    r_new.add_argument("name")
+    r_new.add_argument("description")
+    r_new.set_defaults(func=cmd_rag_create_kb)
+    r_pipes = rag_sub.add_parser("pipelines", help="list pipelines")
+    r_pipes.add_argument("--limit", type=int, default=100)
+    r_pipes.set_defaults(func=cmd_rag_pipelines)
+    r_q = rag_sub.add_parser("query", help="ask a pipeline a question")
+    r_q.add_argument("pipeline_id")
+    r_q.add_argument("question")
+    r_q.add_argument("--top-k", dest="top_k", type=int, default=3)
+    r_q.set_defaults(func=cmd_rag_query)
+
+    # ── models <list|pull> ────────────────────────────────────────────────────
+    p_models = sub.add_parser("models", help="Ollama model management")
+    models_sub = p_models.add_subparsers(dest="models_command", required=True)
+    models_sub.add_parser("list", help="list models").set_defaults(func=cmd_models_list)
+    m_pull = models_sub.add_parser("pull", help="pull a model (admin)")
+    m_pull.add_argument("model_id", help="e.g. llama3.2:latest")
+    m_pull.set_defaults(func=cmd_models_pull)
+
     return parser
 
 
