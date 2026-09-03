@@ -12,11 +12,10 @@ Output defaults to pretty JSON; a richer human view is a follow-up.
 
 import argparse
 import getpass
-import json
 import sys
 from typing import Any, List, Optional
 
-from . import __version__, config
+from . import __version__, config, output
 from .client import MinderClient, MinderError
 
 
@@ -26,8 +25,8 @@ def _client(args: argparse.Namespace) -> MinderClient:
     )
 
 
-def _emit(data: Any) -> None:
-    print(json.dumps(data, indent=2, default=str))
+def _emit(data: Any, as_json: bool = False) -> None:
+    print(output.render(data, as_json))
 
 
 def cmd_login(args: argparse.Namespace) -> Any:
@@ -172,7 +171,7 @@ def main(argv: Optional[List[str]] = None) -> int:
     except MinderError as exc:
         print(f"error: {exc}", file=sys.stderr)
         return 1
-    _emit(result)
+    _emit(result, as_json=args.json)
     return 0
 
 

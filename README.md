@@ -30,7 +30,7 @@ minder ai chat "summarise RAG" --tools           # one-shot chat (JWT)
 
 Config resolves as **flag → env (`MINDER_API_URL` / `MINDER_TOKEN`) → `~/.config/minder/config.json` → default** (`http://localhost:8000`). `minder login` caches the token + url there so later commands need no flags.
 
-Output is pretty JSON (scriptable); a richer human view is a follow-up.
+Output is a compact **human view** by default (a bulleted list for collections, `key: value` for objects, plain text for a chat reply); pass **`--json`** for raw JSON to pipe into `jq`.
 
 ## Develop
 
