@@ -16,7 +16,9 @@ pip install "git+https://github.com/minderhq/cli"
 minder --api-url http://localhost:8000 login    # prompts, caches a JWT
 minder health                                    # api-gateway /health
 minder status                                    # every service's health
-minder plugins                                   # list registered plugins
+minder plugins list                              # list registered plugins
+minder plugins config crypto                     # show a plugin's config
+minder plugins config crypto --set K=V           # update config (JWT)
 
 minder rag kbs                                   # list knowledge bases
 minder rag create-kb "My Docs" "my documents"    # create one

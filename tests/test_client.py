@@ -118,3 +118,14 @@ def test_ai_endpoints_build_correctly(monkeypatch):
         "messages": [{"role": "user", "content": "hi"}],
         "minder_tools": True,
     }
+
+
+def test_plugin_config_endpoints(monkeypatch):
+    cap = {}
+    _stub(monkeypatch, _Resp(payload={}), capture=cap)
+    MinderClient("http://x").plugin_config("crypto")
+    assert cap["url"] == "http://x/v1/plugins/crypto/config" and cap["method"] == "GET"
+
+    _stub(monkeypatch, _Resp(payload={}), capture=cap)
+    MinderClient("http://x").set_plugin_config("crypto", {"K": "v"})
+    assert cap["method"] == "PUT" and cap["json"] == {"K": "v"}

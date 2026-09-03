@@ -89,6 +89,12 @@ class MinderClient:
     def plugins(self) -> Any:
         return self.request("GET", "/v1/plugins")
 
+    def plugin_config(self, name: str) -> Any:
+        return self.request("GET", f"/v1/plugins/{name}/config")
+
+    def set_plugin_config(self, name: str, updates: dict) -> Any:
+        return self.request("PUT", f"/v1/plugins/{name}/config", json_body=updates)
+
     # ── RAG ───────────────────────────────────────────────────────────────────
     def rag_kbs(self, limit: int = 100) -> Any:
         return self.request("GET", "/v1/rag/knowledge-bases", params={"limit": limit})
