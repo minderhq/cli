@@ -78,6 +78,24 @@ def cmd_models_pull(args: argparse.Namespace) -> Any:
     return _client(args).models_pull(args.model_id)
 
 
+def _assistant_reply(resp: Any) -> Any:
+    """Pull the assistant text out of an OpenAI-shaped chat response; fall back to
+    the raw payload if the shape is unexpected (so nothing is silently swallowed)."""
+    try:
+        return resp["choices"][0]["message"]["content"]
+    except (KeyError, IndexError, TypeError):
+        return resp
+
+
+def cmd_ai_tools(args: argparse.Namespace) -> Any:
+    return _client(args).ai_tools()
+
+
+def cmd_ai_chat(args: argparse.Namespace) -> Any:
+    resp = _client(args).ai_chat(args.message, model=args.model, tools=args.tools)
+    return _assistant_reply(resp)
+
+
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="minder", description="Minder CLI")
     parser.add_argument("--version", action="version", version=f"minder {__version__}")
@@ -128,6 +146,20 @@ def build_parser() -> argparse.ArgumentParser:
     m_pull = models_sub.add_parser("pull", help="pull a model (admin)")
     m_pull.add_argument("model_id", help="e.g. llama3.2:latest")
     m_pull.set_defaults(func=cmd_models_pull)
+
+    # ── ai <tools|chat> ───────────────────────────────────────────────────────
+    p_ai = sub.add_parser("ai", help="function-calling tools + chat")
+    ai_sub = p_ai.add_subparsers(dest="ai_command", required=True)
+    ai_sub.add_parser("tools", help="list the LLM's callable tools").set_defaults(
+        func=cmd_ai_tools
+    )
+    a_chat = ai_sub.add_parser("chat", help="one-shot chat (JWT required)")
+    a_chat.add_argument("message")
+    a_chat.add_argument("--model", default="llama3.2")
+    a_chat.add_argument(
+        "--tools", action="store_true", help="enable the multi-turn tool loop"
+    )
+    a_chat.set_defaults(func=cmd_ai_chat)
 
     return parser
 
