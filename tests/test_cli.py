@@ -45,6 +45,39 @@ def test_login_without_token_in_response_errors(monkeypatch, capsys):
     assert "no access_token" in capsys.readouterr().err
 
 
+def test_billing_and_org_list_dispatch(monkeypatch, capsys):
+    monkeypatch.setattr(
+        cli.MinderClient, "billing_subscription", lambda self: {"tier": "pro"}
+    )
+    assert cli.main(["billing", "subscription", "--json"]) == 0
+    assert json.loads(capsys.readouterr().out) == {"tier": "pro"}
+
+    monkeypatch.setattr(
+        cli.MinderClient, "billing_checkout", lambda self, tier: {"tier": tier}
+    )
+    assert cli.main(["billing", "checkout", "enterprise"]) == 0
+
+    monkeypatch.setattr(
+        cli.MinderClient, "orgs_mine", lambda self: {"organizations": []}
+    )
+    assert cli.main(["org", "list"]) == 0
+
+
+def test_org_switch_caches_new_token(monkeypatch, capsys):
+    seen = {}
+    monkeypatch.setattr(
+        cli.MinderClient,
+        "org_switch",
+        lambda self, organization_id: seen.update(org=organization_id)
+        or {"access_token": "T2", "active_tenant_id": str(organization_id)},
+    )
+    rc = cli.main(["org", "switch", "42", "--api-url", "http://h:8000"])
+    assert rc == 0
+    assert seen == {"org": 42}  # arg parsed as int
+    # the re-minted token is persisted so the next command acts in the new org
+    assert config.resolve_token() == "T2"
+
+
 def test_client_error_becomes_exit_1(monkeypatch, capsys):
     def boom(self):
         raise MinderError("Not authenticated", status=401)

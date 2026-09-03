@@ -123,6 +123,27 @@ class MinderClient:
     def models_pull(self, model_id: str) -> Any:
         return self.request("POST", "/v1/models", json_body={"model_id": model_id})
 
+    # ── billing (SaaS) ─────────────────────────────────────────────────────────
+    def billing_subscription(self) -> Any:
+        return self.request("GET", "/v1/billing/subscription")
+
+    def billing_checkout(self, tier: str) -> Any:
+        return self.request("POST", "/v1/billing/checkout", json_body={"tier": tier})
+
+    def billing_portal(self) -> Any:
+        return self.request("POST", "/v1/billing/portal")
+
+    # ── organizations (multi-tenant) ──────────────────────────────────────────
+    def orgs_mine(self) -> Any:
+        return self.request("GET", "/v1/organizations/mine")
+
+    def org_switch(self, organization_id: int) -> Any:
+        return self.request(
+            "POST",
+            "/v1/organizations/switch",
+            json_body={"organization_id": organization_id},
+        )
+
     # ── AI (function-calling tools + chat) ────────────────────────────────────
     def ai_tools(self) -> Any:
         return self.request("GET", "/v1/ai/functions/definitions")
