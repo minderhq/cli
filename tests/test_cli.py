@@ -26,7 +26,7 @@ def test_status_and_plugins_wire_to_client(monkeypatch, capsys):
     monkeypatch.setattr(cli.MinderClient, "status", lambda self: ["a"])
     assert cli.main(["status"]) == 0
     monkeypatch.setattr(cli.MinderClient, "plugins", lambda self: {"items": []})
-    assert cli.main(["plugins"]) == 0
+    assert cli.main(["plugins", "list"]) == 0
 
 
 def test_login_caches_token(monkeypatch, capsys):
@@ -50,7 +50,7 @@ def test_client_error_becomes_exit_1(monkeypatch, capsys):
         raise MinderError("Not authenticated", status=401)
 
     monkeypatch.setattr(cli.MinderClient, "plugins", boom)
-    assert cli.main(["plugins"]) == 1
+    assert cli.main(["plugins", "list"]) == 1
     assert "error: Not authenticated" in capsys.readouterr().err
 
 
@@ -145,3 +145,49 @@ def test_default_output_is_human(monkeypatch, capsys):
     monkeypatch.setattr(cli.MinderClient, "health", lambda self: {"healthy": True})
     cli.main(["health"])
     assert capsys.readouterr().out.strip() == "healthy: True"
+
+
+def test_plugins_config_get(monkeypatch, capsys):
+    monkeypatch.setattr(
+        cli.MinderClient,
+        "plugin_config",
+        lambda self, name: {"schema": [], "values": {}},
+    )
+    assert cli.main(["plugins", "config", "crypto"]) == 0
+
+
+def test_plugins_config_set_parses_pairs(monkeypatch):
+    seen = {}
+    monkeypatch.setattr(
+        cli.MinderClient,
+        "set_plugin_config",
+        lambda self, name, updates: seen.update(name=name, updates=updates) or {},
+    )
+    assert (
+        cli.main(
+            [
+                "plugins",
+                "config",
+                "crypto",
+                "--set",
+                "CRYPTO_SYMBOLS=BTC-USD",
+                "--set",
+                "X=1",
+            ]
+        )
+        == 0
+    )
+    assert seen == {
+        "name": "crypto",
+        "updates": {"CRYPTO_SYMBOLS": "BTC-USD", "X": "1"},
+    }
+
+
+def test_plugins_config_bad_set_is_an_error(monkeypatch, capsys):
+    assert cli.main(["plugins", "config", "crypto", "--set", "noequals"]) == 1
+    assert "KEY=VALUE" in capsys.readouterr().err
+
+
+def test_parse_set_splits_on_first_equals():
+    assert cli._parse_set(["A=b=c"]) == {"A": "b=c"}
+    assert cli._parse_set([]) == {}
