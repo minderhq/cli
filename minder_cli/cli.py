@@ -130,6 +130,10 @@ def cmd_org_switch(args: argparse.Namespace) -> Any:
     return resp
 
 
+def cmd_graph_correlations(args: argparse.Namespace) -> Any:
+    return _client(args).graph_correlations(args.entity, limit=args.limit)
+
+
 def cmd_ai_tools(args: argparse.Namespace) -> Any:
     return _client(args).ai_tools()
 
@@ -267,6 +271,18 @@ def build_parser() -> argparse.ArgumentParser:
     )
     o_switch.add_argument("organization_id", type=int)
     o_switch.set_defaults(func=cmd_org_switch)
+
+    # ── graph <correlations> ──────────────────────────────────────────────────
+    p_graph = sub.add_parser("graph", help="knowledge-graph correlation discovery")
+    graph_sub = p_graph.add_subparsers(dest="graph_command", required=True)
+    g_corr = graph_sub.add_parser(
+        "correlations",
+        parents=[common],
+        help="an entity's correlated entities/signals",
+    )
+    g_corr.add_argument("entity")
+    g_corr.add_argument("--limit", type=int, default=10)
+    g_corr.set_defaults(func=cmd_graph_correlations)
 
     return parser
 

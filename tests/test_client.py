@@ -154,6 +154,15 @@ def test_org_endpoints_build_correctly(monkeypatch):
     assert cap["url"] == "http://x/v1/organizations/switch" and cap["method"] == "POST"
     assert cap["json"] == {"organization_id": 7}
 
+
+def test_graph_correlations_builds_correctly(monkeypatch):
+    cap = {}
+    _stub(monkeypatch, _Resp(payload={}), capture=cap)
+    MinderClient("http://x").graph_correlations("Acme Corp", limit=5)
+    assert cap["url"] == "http://x/v1/graph-rag/graph/correlations"
+    assert cap["method"] == "GET"
+    assert cap["params"] == {"entity": "Acme Corp", "limit": 5}
+
     _stub(monkeypatch, _Resp(payload={}), capture=cap)
     MinderClient("http://x").set_plugin_config("crypto", {"K": "v"})
     assert cap["method"] == "PUT" and cap["json"] == {"K": "v"}

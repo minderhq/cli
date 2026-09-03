@@ -144,6 +144,17 @@ class MinderClient:
             json_body={"organization_id": organization_id},
         )
 
+    # ── knowledge graph (correlation discovery) ───────────────────────────────
+    def graph_correlations(self, entity: str, limit: int = 10) -> Any:
+        # graph-rag is proxied under /v1/graph-rag/* (its own /v1/graph/* would
+        # collide with marketplace's dependency graph), so the entity-correlation
+        # read is /v1/graph-rag/graph/correlations.
+        return self.request(
+            "GET",
+            "/v1/graph-rag/graph/correlations",
+            params={"entity": entity, "limit": limit},
+        )
+
     # ── AI (function-calling tools + chat) ────────────────────────────────────
     def ai_tools(self) -> Any:
         return self.request("GET", "/v1/ai/functions/definitions")
