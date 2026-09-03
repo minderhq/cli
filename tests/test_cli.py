@@ -18,7 +18,7 @@ def _isolate(monkeypatch, tmp_path):
 
 def test_health_dispatches_and_prints(monkeypatch, capsys):
     monkeypatch.setattr(cli.MinderClient, "health", lambda self: {"status": "healthy"})
-    assert cli.main(["health"]) == 0
+    assert cli.main(["--json", "health"]) == 0
     assert json.loads(capsys.readouterr().out) == {"status": "healthy"}
 
 
@@ -85,7 +85,7 @@ def test_rag_kbs_and_query_dispatch(monkeypatch, capsys):
     capsys.readouterr()  # clear the accumulated output from the kbs call above
     assert cli.main(["rag", "query", "p1", "hello?", "--top-k", "2"]) == 0
     assert q_seen == {"pid": "p1", "q": "hello?", "k": 2}
-    assert capsys.readouterr().out.strip().startswith("{")
+    assert capsys.readouterr().out.strip() == "ok: 1"  # human render of {"ok": 1}
 
 
 def test_models_list_and_pull_dispatch(monkeypatch):
@@ -108,7 +108,7 @@ def test_ai_chat_extracts_assistant_content(monkeypatch, capsys):
     resp = {"choices": [{"message": {"content": "the answer"}}]}
     monkeypatch.setattr(cli.MinderClient, "ai_chat", lambda self, m, model, tools: resp)
     assert cli.main(["ai", "chat", "question?"]) == 0
-    assert capsys.readouterr().out.strip() == '"the answer"'
+    assert capsys.readouterr().out.strip() == "the answer"  # plain text, not quoted
 
 
 def test_ai_chat_falls_back_to_raw_on_odd_shape(monkeypatch, capsys):
@@ -133,3 +133,15 @@ def test_ai_chat_passes_model_and_tools_flag(monkeypatch):
 def test_ai_tools_dispatch(monkeypatch):
     monkeypatch.setattr(cli.MinderClient, "ai_tools", lambda self: [{"name": "t"}])
     assert cli.main(["ai", "tools"]) == 0
+
+
+def test_json_flag_switches_to_raw(monkeypatch, capsys):
+    monkeypatch.setattr(cli.MinderClient, "health", lambda self: {"healthy": True})
+    cli.main(["--json", "health"])
+    assert capsys.readouterr().out.strip() == '{\n  "healthy": true\n}'
+
+
+def test_default_output_is_human(monkeypatch, capsys):
+    monkeypatch.setattr(cli.MinderClient, "health", lambda self: {"healthy": True})
+    cli.main(["health"])
+    assert capsys.readouterr().out.strip() == "healthy: True"
