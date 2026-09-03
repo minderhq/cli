@@ -102,3 +102,34 @@ def test_models_list_and_pull_dispatch(monkeypatch):
 def test_rag_requires_a_subcommand(capsys):
     with __import__("pytest").raises(SystemExit):
         cli.main(["rag"])  # required=True → argparse exits
+
+
+def test_ai_chat_extracts_assistant_content(monkeypatch, capsys):
+    resp = {"choices": [{"message": {"content": "the answer"}}]}
+    monkeypatch.setattr(cli.MinderClient, "ai_chat", lambda self, m, model, tools: resp)
+    assert cli.main(["ai", "chat", "question?"]) == 0
+    assert capsys.readouterr().out.strip() == '"the answer"'
+
+
+def test_ai_chat_falls_back_to_raw_on_odd_shape(monkeypatch, capsys):
+    monkeypatch.setattr(
+        cli.MinderClient, "ai_chat", lambda self, m, model, tools: {"unexpected": 1}
+    )
+    assert cli.main(["ai", "chat", "q"]) == 0
+    assert "unexpected" in capsys.readouterr().out
+
+
+def test_ai_chat_passes_model_and_tools_flag(monkeypatch):
+    seen = {}
+    monkeypatch.setattr(
+        cli.MinderClient,
+        "ai_chat",
+        lambda self, m, model, tools: seen.update(m=m, model=model, tools=tools) or {},
+    )
+    cli.main(["ai", "chat", "hello", "--model", "qwen", "--tools"])
+    assert seen == {"m": "hello", "model": "qwen", "tools": True}
+
+
+def test_ai_tools_dispatch(monkeypatch):
+    monkeypatch.setattr(cli.MinderClient, "ai_tools", lambda self: [{"name": "t"}])
+    assert cli.main(["ai", "tools"]) == 0
