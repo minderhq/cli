@@ -18,7 +18,7 @@ def _isolate(monkeypatch, tmp_path):
 
 def test_health_dispatches_and_prints(monkeypatch, capsys):
     monkeypatch.setattr(cli.MinderClient, "health", lambda self: {"status": "healthy"})
-    assert cli.main(["--json", "health"]) == 0
+    assert cli.main(["health", "--json"]) == 0
     assert json.loads(capsys.readouterr().out) == {"status": "healthy"}
 
 
@@ -33,7 +33,7 @@ def test_login_caches_token(monkeypatch, capsys):
     monkeypatch.setattr(
         cli.MinderClient, "login", lambda self, u, p: {"access_token": "T"}
     )
-    rc = cli.main(["--api-url", "http://h:8000", "login", "-u", "a", "-p", "b"])
+    rc = cli.main(["login", "-u", "a", "-p", "b", "--api-url", "http://h:8000"])
     assert rc == 0
     assert config.resolve_token() == "T"
     assert config.resolve_api_url() == "http://h:8000"
@@ -64,7 +64,7 @@ def test_flag_token_overrides(monkeypatch):
         def status(self):
             return {}
 
-    cli.main(["--token", "flagtok", "status"])
+    cli.main(["status", "--token", "flagtok"])
     assert captured["token"] == "flagtok"
 
 
@@ -137,7 +137,7 @@ def test_ai_tools_dispatch(monkeypatch):
 
 def test_json_flag_switches_to_raw(monkeypatch, capsys):
     monkeypatch.setattr(cli.MinderClient, "health", lambda self: {"healthy": True})
-    cli.main(["--json", "health"])
+    cli.main(["health", "--json"])
     assert capsys.readouterr().out.strip() == '{\n  "healthy": true\n}'
 
 

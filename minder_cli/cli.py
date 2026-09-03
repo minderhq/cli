@@ -6,8 +6,8 @@ Commands wrap the documented api-gateway endpoints:
   minder status           # every service's health (fan-out)
   minder plugins          # list registered plugins
 
-Global flags: --api-url, --token (override the cached/env config), --json (raw).
-Output defaults to pretty JSON; a richer human view is a follow-up.
+Global flags go AFTER the subcommand (git/docker style): --api-url, --token
+(override the cached/env config), --json (raw JSON instead of the human view).
 """
 
 import argparse
@@ -113,34 +113,49 @@ def cmd_ai_chat(args: argparse.Namespace) -> Any:
     return _assistant_reply(resp)
 
 
+def _common() -> argparse.ArgumentParser:
+    # Global flags live on a parent parser applied to every leaf command, so they
+    # go AFTER the subcommand (the git/docker convention): `minder health --json`,
+    # `minder plugins config x --api-url URL`. Putting them only on the leaves
+    # (not the top parser) sidesteps argparse's subparser-default-overwrite gotcha.
+    common = argparse.ArgumentParser(add_help=False)
+    common.add_argument("--api-url", default=None, help="api-gateway base URL")
+    common.add_argument("--token", default=None, help="JWT (overrides cached/env)")
+    common.add_argument(
+        "--json",
+        action="store_true",
+        help="raw JSON output (default is a human view)",
+    )
+    return common
+
+
 def build_parser() -> argparse.ArgumentParser:
+    common = _common()
     parser = argparse.ArgumentParser(prog="minder", description="Minder CLI")
     parser.add_argument("--version", action="version", version=f"minder {__version__}")
-    parser.add_argument(
-        "--api-url", help="api-gateway base URL (default localhost:8000)"
-    )
-    parser.add_argument("--token", help="JWT to use (overrides cached/env)")
-    parser.add_argument(
-        "--json", action="store_true", help="raw JSON output (default is pretty JSON)"
-    )
     sub = parser.add_subparsers(dest="command", required=True)
 
-    p_login = sub.add_parser("login", help="authenticate and cache a token")
+    p_login = sub.add_parser("login", parents=[common], help="authenticate + cache")
     p_login.add_argument("-u", "--username")
     p_login.add_argument("-p", "--password")
     p_login.set_defaults(func=cmd_login)
 
-    sub.add_parser("health", help="api-gateway /health").set_defaults(func=cmd_health)
-    sub.add_parser("status", help="every service's health").set_defaults(
-        func=cmd_status
+    sub.add_parser("health", parents=[common], help="api-gateway /health").set_defaults(
+        func=cmd_health
     )
+    sub.add_parser(
+        "status", parents=[common], help="every service's health"
+    ).set_defaults(func=cmd_status)
+
     p_plugins = sub.add_parser("plugins", help="list + configure plugins")
     plugins_sub = p_plugins.add_subparsers(dest="plugins_command", required=True)
-    plugins_sub.add_parser("list", help="list registered plugins").set_defaults(
-        func=cmd_plugins_list
-    )
+    plugins_sub.add_parser(
+        "list", parents=[common], help="list registered plugins"
+    ).set_defaults(func=cmd_plugins_list)
     p_cfg = plugins_sub.add_parser(
-        "config", help="show a plugin's config, or --set KEY=VALUE to update it"
+        "config",
+        parents=[common],
+        help="show a plugin's config, or --set KEY=VALUE to update it",
     )
     p_cfg.add_argument("name")
     p_cfg.add_argument(
@@ -150,20 +165,23 @@ def build_parser() -> argparse.ArgumentParser:
         help="update a config key (repeatable)",
     )
     p_cfg.set_defaults(func=cmd_plugins_config)
+
     # ── rag <kbs|create-kb|pipelines|query> ───────────────────────────────────
     p_rag = sub.add_parser("rag", help="knowledge bases, pipelines, and queries")
     rag_sub = p_rag.add_subparsers(dest="rag_command", required=True)
-    r_kbs = rag_sub.add_parser("kbs", help="list knowledge bases")
+    r_kbs = rag_sub.add_parser("kbs", parents=[common], help="list knowledge bases")
     r_kbs.add_argument("--limit", type=int, default=100)
     r_kbs.set_defaults(func=cmd_rag_kbs)
-    r_new = rag_sub.add_parser("create-kb", help="create a knowledge base")
+    r_new = rag_sub.add_parser(
+        "create-kb", parents=[common], help="create a knowledge base"
+    )
     r_new.add_argument("name")
     r_new.add_argument("description")
     r_new.set_defaults(func=cmd_rag_create_kb)
-    r_pipes = rag_sub.add_parser("pipelines", help="list pipelines")
+    r_pipes = rag_sub.add_parser("pipelines", parents=[common], help="list pipelines")
     r_pipes.add_argument("--limit", type=int, default=100)
     r_pipes.set_defaults(func=cmd_rag_pipelines)
-    r_q = rag_sub.add_parser("query", help="ask a pipeline a question")
+    r_q = rag_sub.add_parser("query", parents=[common], help="ask a pipeline")
     r_q.add_argument("pipeline_id")
     r_q.add_argument("question")
     r_q.add_argument("--top-k", dest="top_k", type=int, default=3)
@@ -172,18 +190,22 @@ def build_parser() -> argparse.ArgumentParser:
     # ── models <list|pull> ────────────────────────────────────────────────────
     p_models = sub.add_parser("models", help="Ollama model management")
     models_sub = p_models.add_subparsers(dest="models_command", required=True)
-    models_sub.add_parser("list", help="list models").set_defaults(func=cmd_models_list)
-    m_pull = models_sub.add_parser("pull", help="pull a model (admin)")
+    models_sub.add_parser("list", parents=[common], help="list models").set_defaults(
+        func=cmd_models_list
+    )
+    m_pull = models_sub.add_parser(
+        "pull", parents=[common], help="pull a model (admin)"
+    )
     m_pull.add_argument("model_id", help="e.g. llama3.2:latest")
     m_pull.set_defaults(func=cmd_models_pull)
 
     # ── ai <tools|chat> ───────────────────────────────────────────────────────
     p_ai = sub.add_parser("ai", help="function-calling tools + chat")
     ai_sub = p_ai.add_subparsers(dest="ai_command", required=True)
-    ai_sub.add_parser("tools", help="list the LLM's callable tools").set_defaults(
-        func=cmd_ai_tools
-    )
-    a_chat = ai_sub.add_parser("chat", help="one-shot chat (JWT required)")
+    ai_sub.add_parser(
+        "tools", parents=[common], help="list the LLM's callable tools"
+    ).set_defaults(func=cmd_ai_tools)
+    a_chat = ai_sub.add_parser("chat", parents=[common], help="one-shot chat (JWT)")
     a_chat.add_argument("message")
     a_chat.add_argument("--model", default="llama3.2")
     a_chat.add_argument(

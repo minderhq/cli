@@ -52,3 +52,29 @@ def test_status_services_wrapper_renders_as_list():
     out = output.render(data)
     assert out.startswith("- gateway  —  healthy")
     assert "(1 shown)" in out
+
+
+def test_rag_query_shows_answer_not_just_sources():
+    # regression: {answer, sources:[...]} must show the answer, not only sources
+    data = {
+        "answer": "X is a thing.",
+        "sources": [{"content": "..."}, {"content": "..."}],
+        "confidence": 0.9,
+    }
+    out = output.render(data)
+    assert "answer: X is a thing." in out
+    assert "sources:" in out and "confidence: 0.9" in out
+
+
+def test_plugins_config_shows_values_not_just_schema():
+    # regression: {schema:[...], values:{...}} must not hide values behind schema
+    data = {"schema": [{"key": "K"}], "values": {"K": "v"}, "configurable": True}
+    out = output.render(data)
+    assert "values:" in out and '"K": "v"' in out
+    assert "schema:" in out and "configurable: True" in out
+
+
+def test_pure_wrapper_still_renders_as_rows():
+    # a single list + only pagination metadata → the nice rows+count view
+    out = output.render({"plugins": [{"name": "a"}], "count": 1, "total": 1})
+    assert out == "- a\n(1 shown of 1)"

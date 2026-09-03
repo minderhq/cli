@@ -13,7 +13,7 @@ pip install "git+https://github.com/minderhq/cli"
 ## Use
 
 ```bash
-minder --api-url http://localhost:8000 login    # prompts, caches a JWT
+minder login --api-url http://localhost:8000    # prompts, caches a JWT
 minder health                                    # api-gateway /health
 minder status                                    # every service's health
 minder plugins list                              # list registered plugins
@@ -29,6 +29,8 @@ minder models pull llama3.2:latest               # pull one (admin)
 minder ai tools                                  # the LLM's callable tools
 minder ai chat "summarise RAG" --tools           # one-shot chat (JWT)
 ```
+
+Global flags (`--api-url`, `--token`, `--json`) go **after** the subcommand (git/docker style), e.g. `minder health --json`.
 
 Config resolves as **flag → env (`MINDER_API_URL` / `MINDER_TOKEN`) → `~/.config/minder/config.json` → default** (`http://localhost:8000`). `minder login` caches the token + url there so later commands need no flags.
 
