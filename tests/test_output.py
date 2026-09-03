@@ -37,3 +37,18 @@ def test_empty_and_none():
 
 def test_unknown_scalar_falls_back():
     assert output.render(42) == "42"
+
+
+def test_plugins_wrapper_key_renders_as_list():
+    # /v1/plugins → {"plugins":[...], "total":N} (not "items")
+    data = {"plugins": [{"name": "crypto"}, {"name": "news"}], "total": 9, "count": 2}
+    out = output.render(data)
+    assert "- crypto" in out and "- news" in out and "(2 shown of 9)" in out
+
+
+def test_status_services_wrapper_renders_as_list():
+    # /v1/status → {"services":[...]}
+    data = {"services": [{"name": "gateway", "status": "healthy"}]}
+    out = output.render(data)
+    assert out.startswith("- gateway  —  healthy")
+    assert "(1 shown)" in out
