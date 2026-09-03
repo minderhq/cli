@@ -26,13 +26,15 @@ def _human(data: Any) -> str:
     if isinstance(data, list):
         return _rows(data) or "(none)"
     if isinstance(data, dict):
-        items = data.get("items")
-        if isinstance(items, list):
-            body = _rows(items) or "(none)"
+        # A collection wrapper carries its list under a payload key that varies by
+        # endpoint: `items` (RAG / models), `plugins` (/v1/plugins), `services`
+        # (/v1/status). Render the first list value as rows + a shown/total count.
+        list_key = next((k for k, v in data.items() if isinstance(v, list)), None)
+        if list_key is not None:
+            rows = data[list_key]
+            body = _rows(rows) or "(none)"
             total = data.get("total")
-            count = f"{len(items)} shown" + (
-                f" of {total}" if total is not None else ""
-            )
+            count = f"{len(rows)} shown" + (f" of {total}" if total is not None else "")
             return f"{body}\n({count})"
         return _kv(data)
     return str(data)
