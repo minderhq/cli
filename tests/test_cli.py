@@ -66,3 +66,39 @@ def test_flag_token_overrides(monkeypatch):
 
     cli.main(["--token", "flagtok", "status"])
     assert captured["token"] == "flagtok"
+
+
+def test_rag_kbs_and_query_dispatch(monkeypatch, capsys):
+    seen = {}
+    monkeypatch.setattr(
+        cli.MinderClient, "rag_kbs", lambda self, limit: seen.update(limit=limit) or []
+    )
+    assert cli.main(["rag", "kbs", "--limit", "7"]) == 0
+    assert seen["limit"] == 7
+
+    q_seen = {}
+    monkeypatch.setattr(
+        cli.MinderClient,
+        "rag_query",
+        lambda self, pid, q, top_k: q_seen.update(pid=pid, q=q, k=top_k) or {"ok": 1},
+    )
+    capsys.readouterr()  # clear the accumulated output from the kbs call above
+    assert cli.main(["rag", "query", "p1", "hello?", "--top-k", "2"]) == 0
+    assert q_seen == {"pid": "p1", "q": "hello?", "k": 2}
+    assert capsys.readouterr().out.strip().startswith("{")
+
+
+def test_models_list_and_pull_dispatch(monkeypatch):
+    monkeypatch.setattr(cli.MinderClient, "models_list", lambda self: {"items": []})
+    assert cli.main(["models", "list"]) == 0
+    seen = {}
+    monkeypatch.setattr(
+        cli.MinderClient, "models_pull", lambda self, mid: seen.update(mid=mid) or {}
+    )
+    assert cli.main(["models", "pull", "llama3.2:latest"]) == 0
+    assert seen["mid"] == "llama3.2:latest"
+
+
+def test_rag_requires_a_subcommand(capsys):
+    with __import__("pytest").raises(SystemExit):
+        cli.main(["rag"])  # required=True → argparse exits
