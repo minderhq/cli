@@ -116,3 +116,20 @@ class MinderClient:
 
     def models_pull(self, model_id: str) -> Any:
         return self.request("POST", "/v1/models", json_body={"model_id": model_id})
+
+    # ── AI (function-calling tools + chat) ────────────────────────────────────
+    def ai_tools(self) -> Any:
+        return self.request("GET", "/v1/ai/functions/definitions")
+
+    def ai_chat(
+        self, message: str, model: str = "llama3.2", tools: bool = False
+    ) -> Any:
+        return self.request(
+            "POST",
+            "/v1/ai/chat/completions",
+            json_body={
+                "model": model,
+                "messages": [{"role": "user", "content": message}],
+                "minder_tools": tools,
+            },
+        )

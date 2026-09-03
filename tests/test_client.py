@@ -100,3 +100,21 @@ def test_models_endpoints_build_correctly(monkeypatch):
     _stub(monkeypatch, _Resp(payload={}), capture=cap)
     MinderClient("http://x").models_pull("llama3.2:latest")
     assert cap["method"] == "POST" and cap["json"] == {"model_id": "llama3.2:latest"}
+
+
+def test_ai_endpoints_build_correctly(monkeypatch):
+    cap = {}
+    _stub(monkeypatch, _Resp(payload={}), capture=cap)
+    MinderClient("http://x").ai_tools()
+    assert (
+        cap["url"] == "http://x/v1/ai/functions/definitions" and cap["method"] == "GET"
+    )
+
+    _stub(monkeypatch, _Resp(payload={}), capture=cap)
+    MinderClient("http://x").ai_chat("hi", model="qwen", tools=True)
+    assert cap["url"] == "http://x/v1/ai/chat/completions" and cap["method"] == "POST"
+    assert cap["json"] == {
+        "model": "qwen",
+        "messages": [{"role": "user", "content": "hi"}],
+        "minder_tools": True,
+    }
