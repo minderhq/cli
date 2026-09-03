@@ -61,7 +61,7 @@ class MinderClient:
                 params=params,
                 timeout=self.timeout,
             )
-        except httpx.HTTPError as exc:
+        except (httpx.HTTPError, httpx.InvalidURL) as exc:
             raise MinderError(
                 f"cannot reach {self.base_url}: {type(exc).__name__}"
             ) from exc
