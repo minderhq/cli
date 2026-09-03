@@ -78,6 +78,18 @@ def test_org_switch_caches_new_token(monkeypatch, capsys):
     assert config.resolve_token() == "T2"
 
 
+def test_graph_correlations_dispatch(monkeypatch, capsys):
+    seen = {}
+    monkeypatch.setattr(
+        cli.MinderClient,
+        "graph_correlations",
+        lambda self, entity, limit: seen.update(e=entity, k=limit)
+        or {"correlations": []},
+    )
+    assert cli.main(["graph", "correlations", "Acme Corp", "--limit", "5"]) == 0
+    assert seen == {"e": "Acme Corp", "k": 5}  # entity positional + --limit int
+
+
 def test_client_error_becomes_exit_1(monkeypatch, capsys):
     def boom(self):
         raise MinderError("Not authenticated", status=401)
