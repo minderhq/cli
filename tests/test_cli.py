@@ -280,3 +280,17 @@ def test_rag_create_kb_description_is_optional(monkeypatch):
     )
     assert cli.main(["rag", "create-kb", "My KB"]) == 0  # no description
     assert seen == {"n": "My KB", "d": ""}
+
+
+def test_rag_pipelines_dispatches(monkeypatch, capsys):
+    monkeypatch.setattr(
+        cli.MinderClient, "rag_pipelines", lambda self, limit=100: ["p"]
+    )
+    assert cli.main(["rag", "pipelines", "--json"]) == 0
+    assert json.loads(capsys.readouterr().out) == ["p"]
+
+
+def test_billing_portal_dispatches(monkeypatch, capsys):
+    monkeypatch.setattr(cli.MinderClient, "billing_portal", lambda self: {"url": "u"})
+    assert cli.main(["billing", "portal", "--json"]) == 0
+    assert json.loads(capsys.readouterr().out) == {"url": "u"}
