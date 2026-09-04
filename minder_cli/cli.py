@@ -104,6 +104,36 @@ def _assistant_reply(resp: Any) -> Any:
         return resp
 
 
+def cmd_billing_subscription(args: argparse.Namespace) -> Any:
+    return _client(args).billing_subscription()
+
+
+def cmd_billing_checkout(args: argparse.Namespace) -> Any:
+    return _client(args).billing_checkout(args.tier)
+
+
+def cmd_billing_portal(args: argparse.Namespace) -> Any:
+    return _client(args).billing_portal()
+
+
+def cmd_org_list(args: argparse.Namespace) -> Any:
+    return _client(args).orgs_mine()
+
+
+def cmd_org_switch(args: argparse.Namespace) -> Any:
+    # Switching re-mints the JWT with the new active_tenant_id -- persist it so the
+    # NEXT command acts in the switched org (mirrors how `login` caches its token).
+    resp = _client(args).org_switch(args.organization_id)
+    token = resp.get("access_token") if isinstance(resp, dict) else None
+    if token:
+        config.save_token(token, config.resolve_api_url(args.api_url))
+    return resp
+
+
+def cmd_graph_correlations(args: argparse.Namespace) -> Any:
+    return _client(args).graph_correlations(args.entity, limit=args.limit)
+
+
 def cmd_ai_tools(args: argparse.Namespace) -> Any:
     return _client(args).ai_tools()
 
@@ -213,10 +243,61 @@ def build_parser() -> argparse.ArgumentParser:
     )
     a_chat.set_defaults(func=cmd_ai_chat)
 
+    # ── billing <subscription|checkout|portal> ────────────────────────────────
+    p_billing = sub.add_parser("billing", help="subscription, checkout, portal (SaaS)")
+    billing_sub = p_billing.add_subparsers(dest="billing_command", required=True)
+    billing_sub.add_parser(
+        "subscription", parents=[common], help="show the org's current plan"
+    ).set_defaults(func=cmd_billing_subscription)
+    b_checkout = billing_sub.add_parser(
+        "checkout", parents=[common], help="start a hosted checkout for a tier"
+    )
+    b_checkout.add_argument("tier", help="e.g. pro, enterprise")
+    b_checkout.set_defaults(func=cmd_billing_checkout)
+    billing_sub.add_parser(
+        "portal", parents=[common], help="get the customer-portal URL"
+    ).set_defaults(func=cmd_billing_portal)
+
+    # ── org <list|switch> ─────────────────────────────────────────────────────
+    p_org = sub.add_parser("org", help="your organizations (multi-tenant)")
+    org_sub = p_org.add_subparsers(dest="org_command", required=True)
+    org_sub.add_parser(
+        "list", parents=[common], help="list the orgs you belong to"
+    ).set_defaults(func=cmd_org_list)
+    o_switch = org_sub.add_parser(
+        "switch",
+        parents=[common],
+        help="switch active org (re-mints + caches your JWT)",
+    )
+    o_switch.add_argument("organization_id", type=int)
+    o_switch.set_defaults(func=cmd_org_switch)
+
+    # ── graph <correlations> ──────────────────────────────────────────────────
+    p_graph = sub.add_parser("graph", help="knowledge-graph correlation discovery")
+    graph_sub = p_graph.add_subparsers(dest="graph_command", required=True)
+    g_corr = graph_sub.add_parser(
+        "correlations",
+        parents=[common],
+        help="an entity's correlated entities/signals",
+    )
+    g_corr.add_argument("entity")
+    g_corr.add_argument("--limit", type=int, default=10)
+    g_corr.set_defaults(func=cmd_graph_correlations)
+
     return parser
 
 
 def main(argv: Optional[List[str]] = None) -> int:
+    # Emit UTF-8 regardless of the terminal's codepage. Windows consoles default
+    # to a legacy codepage (e.g. cp1254), which mangles non-ASCII output — plugin
+    # names/descriptions, bullets, em-dashes — into "?"/replacement chars or, on a
+    # strict stream, raises. errors="replace" never crashes. Guarded because a
+    # captured/redirected stream (pytest capsys, a pipe) may not be reconfigurable.
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
+    except (AttributeError, ValueError):
+        pass
+
     parser = build_parser()
     args = parser.parse_args(argv)
     try:
