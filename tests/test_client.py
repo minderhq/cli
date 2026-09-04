@@ -126,6 +126,43 @@ def test_plugin_config_endpoints(monkeypatch):
     MinderClient("http://x").plugin_config("crypto")
     assert cap["url"] == "http://x/v1/plugins/crypto/config" and cap["method"] == "GET"
 
+
+def test_billing_endpoints_build_correctly(monkeypatch):
+    cap = {}
+    _stub(monkeypatch, _Resp(payload={}), capture=cap)
+    MinderClient("http://x").billing_subscription()
+    assert cap["url"] == "http://x/v1/billing/subscription" and cap["method"] == "GET"
+
+    _stub(monkeypatch, _Resp(payload={}), capture=cap)
+    MinderClient("http://x").billing_checkout("pro")
+    assert cap["url"] == "http://x/v1/billing/checkout" and cap["method"] == "POST"
+    assert cap["json"] == {"tier": "pro"}
+
+    _stub(monkeypatch, _Resp(payload={}), capture=cap)
+    MinderClient("http://x").billing_portal()
+    assert cap["url"] == "http://x/v1/billing/portal" and cap["method"] == "POST"
+
+
+def test_org_endpoints_build_correctly(monkeypatch):
+    cap = {}
+    _stub(monkeypatch, _Resp(payload={}), capture=cap)
+    MinderClient("http://x").orgs_mine()
+    assert cap["url"] == "http://x/v1/organizations/mine" and cap["method"] == "GET"
+
+    _stub(monkeypatch, _Resp(payload={}), capture=cap)
+    MinderClient("http://x").org_switch(7)
+    assert cap["url"] == "http://x/v1/organizations/switch" and cap["method"] == "POST"
+    assert cap["json"] == {"organization_id": 7}
+
+
+def test_graph_correlations_builds_correctly(monkeypatch):
+    cap = {}
+    _stub(monkeypatch, _Resp(payload={}), capture=cap)
+    MinderClient("http://x").graph_correlations("Acme Corp", limit=5)
+    assert cap["url"] == "http://x/v1/graph-rag/graph/correlations"
+    assert cap["method"] == "GET"
+    assert cap["params"] == {"entity": "Acme Corp", "limit": 5}
+
     _stub(monkeypatch, _Resp(payload={}), capture=cap)
     MinderClient("http://x").set_plugin_config("crypto", {"K": "v"})
     assert cap["method"] == "PUT" and cap["json"] == {"K": "v"}
