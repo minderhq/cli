@@ -2,11 +2,44 @@
 error → exit code. The client is stubbed; no network."""
 
 import json
+import sys
 
 import pytest
 
 from minder_cli import cli, config
 from minder_cli.client import MinderError
+
+
+def test_main_reconfigures_stdout_to_utf8_when_possible(monkeypatch):
+    # On a real terminal stdout is reconfigurable — main() forces UTF-8 so
+    # non-ASCII output isn't mangled by a legacy Windows codepage.
+    seen = {}
+
+    class _Stdout:
+        encoding = "cp1254"
+
+        def reconfigure(self, **kw):
+            seen.update(kw)
+
+        def write(self, _s):
+            return None
+
+        def flush(self):
+            return None
+
+    monkeypatch.setattr(sys, "stdout", _Stdout())
+    monkeypatch.setattr(cli.MinderClient, "health", lambda self: {"ok": True})
+    assert cli.main(["health"]) == 0
+    assert seen == {"encoding": "utf-8", "errors": "replace"}
+
+
+def test_main_tolerates_non_reconfigurable_stdout(monkeypatch):
+    # A captured/piped stream (e.g. StringIO) has no reconfigure — must not crash.
+    import io
+
+    monkeypatch.setattr(sys, "stdout", io.StringIO())
+    monkeypatch.setattr(cli.MinderClient, "health", lambda self: {"ok": True})
+    assert cli.main(["health"]) == 0
 
 
 @pytest.fixture(autouse=True)

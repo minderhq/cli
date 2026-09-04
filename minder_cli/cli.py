@@ -288,6 +288,16 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: Optional[List[str]] = None) -> int:
+    # Emit UTF-8 regardless of the terminal's codepage. Windows consoles default
+    # to a legacy codepage (e.g. cp1254), which mangles non-ASCII output — plugin
+    # names/descriptions, bullets, em-dashes — into "?"/replacement chars or, on a
+    # strict stream, raises. errors="replace" never crashes. Guarded because a
+    # captured/redirected stream (pytest capsys, a pipe) may not be reconfigurable.
+    try:
+        sys.stdout.reconfigure(encoding="utf-8", errors="replace")  # type: ignore[union-attr]
+    except (AttributeError, ValueError):
+        pass
+
     parser = build_parser()
     args = parser.parse_args(argv)
     try:
