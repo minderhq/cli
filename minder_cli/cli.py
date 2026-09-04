@@ -206,7 +206,12 @@ def build_parser() -> argparse.ArgumentParser:
         "create-kb", parents=[common], help="create a knowledge base"
     )
     r_new.add_argument("name")
-    r_new.add_argument("description")
+    r_new.add_argument(
+        "description",
+        nargs="?",
+        default="",
+        help="optional (the API allows an empty one)",
+    )
     r_new.set_defaults(func=cmd_rag_create_kb)
     r_pipes = rag_sub.add_parser("pipelines", parents=[common], help="list pipelines")
     r_pipes.add_argument("--limit", type=int, default=100)

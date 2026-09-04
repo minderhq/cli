@@ -269,3 +269,14 @@ def test_plugins_config_bad_set_is_an_error(monkeypatch, capsys):
 def test_parse_set_splits_on_first_equals():
     assert cli._parse_set(["A=b=c"]) == {"A": "b=c"}
     assert cli._parse_set([]) == {}
+
+
+def test_rag_create_kb_description_is_optional(monkeypatch):
+    seen = {}
+    monkeypatch.setattr(
+        cli.MinderClient,
+        "create_kb",
+        lambda self, name, description: seen.update(n=name, d=description) or {},
+    )
+    assert cli.main(["rag", "create-kb", "My KB"]) == 0  # no description
+    assert seen == {"n": "My KB", "d": ""}
