@@ -166,3 +166,26 @@ def test_graph_correlations_builds_correctly(monkeypatch):
     _stub(monkeypatch, _Resp(payload={}), capture=cap)
     MinderClient("http://x").set_plugin_config("crypto", {"K": "v"})
     assert cap["method"] == "PUT" and cap["json"] == {"K": "v"}
+
+
+def test_rag_pipelines_endpoint(monkeypatch):
+    cap = {}
+    _stub(monkeypatch, _Resp(payload={"items": []}), capture=cap)
+    MinderClient("http://x").rag_pipelines(limit=7)
+    assert cap["url"] == "http://x/v1/rag/pipeline"
+    assert cap["method"] == "GET"
+    assert cap["params"] == {"limit": 7}
+
+
+def test_error_detail_falls_back_to_status_on_non_json_body(monkeypatch):
+    _stub(monkeypatch, _Resp(status_code=500, payload=None, text="oops"))
+    with pytest.raises(MinderError) as ei:
+        MinderClient("http://x").health()
+    assert ei.value.status == 500 and "HTTP 500" in str(ei.value)
+
+
+def test_error_detail_handles_non_dict_json_body(monkeypatch):
+    _stub(monkeypatch, _Resp(status_code=400, payload=["a", "b"]))
+    with pytest.raises(MinderError) as ei:
+        MinderClient("http://x").health()
+    assert ei.value.status == 400 and "HTTP 400" in str(ei.value)
