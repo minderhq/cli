@@ -1,8 +1,9 @@
 # cli
 
 `minder` — a small command-line client over a **Minder** instance's api-gateway
-(auth, health, plugins, RAG, models, and AI chat). Open-source
-companion to the platform, alongside `plugin-sdk`. Scope + roadmap: **#1**.
+(auth, health, plugins, RAG, models, AI chat, plus billing, organizations, and
+knowledge-graph correlations). Open-source companion to the platform, alongside
+`plugin-sdk`. Scope + roadmap: **#1**.
 
 ## Install
 
@@ -28,6 +29,13 @@ minder models pull llama3.2:latest               # pull one (admin)
 
 minder ai tools                                  # the LLM's callable tools
 minder ai chat "summarise RAG" --tools           # one-shot chat (JWT)
+
+minder billing subscription                      # the org's current plan
+minder billing checkout pro                      # start a hosted checkout for a tier
+minder billing portal                            # customer-portal URL
+minder org list                                  # the orgs you belong to
+minder org switch <organization_id>              # switch active org (re-mints + caches JWT)
+minder graph correlations "Acme Corp" --limit 5  # an entity's correlated entities/signals
 ```
 
 Global flags (`--api-url`, `--token`, `--json`) go **after** the subcommand (git/docker style), e.g. `minder health --json`.
