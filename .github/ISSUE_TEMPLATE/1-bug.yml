@@ -1,0 +1,43 @@
+name: Bug report
+description: Report a defect — existing behavior is wrong or broken
+title: "[bug]: "
+type: Bug
+labels: ["status:triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report. A maintainer will triage and label this during review.
+  - type: textarea
+    id: description
+    attributes:
+      label: What's wrong?
+      description: A clear description of the defect.
+    validations:
+      required: true
+  - type: textarea
+    id: repro
+    attributes:
+      label: Steps to reproduce (command + output)
+      render: shell
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected vs actual behavior
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: minder-cli version
+      description: Output of `minder --version` (or however this CLI reports its version)
+    validations:
+      required: true
+  - type: textarea
+    id: env
+    attributes:
+      label: Environment
+      description: OS, Python version, install method (pip/pipx/source).
+      render: shell
