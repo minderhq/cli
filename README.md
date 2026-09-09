@@ -5,6 +5,9 @@
 knowledge-graph correlations). Open-source companion to the platform, alongside
 `plugin-sdk`. Scope + roadmap: **#1**.
 
+Full docs: **[minderhq.github.io/docs/cli](https://minderhq.github.io/docs/cli/)** — the
+command reference, plus the wider [Minder documentation](https://minderhq.github.io/docs/).
+
 ## Install
 
 ```bash
