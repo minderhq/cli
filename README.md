@@ -54,4 +54,19 @@ pip install -e ".[dev]"
 black --check . && flake8 --max-line-length=100 --extend-ignore=E203,W503 . && mypy minder_cli && pytest -q
 ```
 
+### API contract
+
+`tests/test_api_contract.py` checks that every `(method, path)` the CLI calls
+(each `self.request("METHOD", "/path")` in `minder_cli`) exists in the API
+Gateway's OpenAPI spec published on the docs site, so a call to a route the
+gateway doesn't serve fails CI. CI fetches the live spec by setting
+`MINDER_OPENAPI_URL`; local runs without it use the committed fallback
+`tests/fixtures/openapi/api-gateway.json`. Refresh the fallback when the gateway
+changes (the test warns when it's stale):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/minderhq/docs/main/docs/api/openapi/api-gateway.json \
+  -o tests/fixtures/openapi/api-gateway.json
+```
+
 Apache-2.0.

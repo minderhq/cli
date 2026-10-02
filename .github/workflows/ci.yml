@@ -27,3 +27,9 @@ jobs:
       python-versions: '["3.11", "3.12"]'
       lint-paths: minder_cli tests
       mypy-paths: minder_cli
+      # tests/test_api_contract.py checks the CLI's API calls against the
+      # gateway spec published on the docs site: fetched live here (a failed
+      # fetch fails), the committed tests/fixtures copy is the offline fallback.
+      test-command: >-
+        MINDER_OPENAPI_URL=https://raw.githubusercontent.com/minderhq/docs/main/docs/api/openapi/api-gateway.json
+        pytest -q
