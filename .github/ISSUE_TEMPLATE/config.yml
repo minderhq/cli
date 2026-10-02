@@ -1,5 +1,5 @@
 blank_issues_enabled: false
 contact_links:
-  - name: Minder platform (core)
-    url: https://github.com/minderhq/minder
-    about: The main Minder platform repo — if this is about the overall product rather than the CLI specifically, it may belong there instead.
+  - name: Minder platform (core) questions
+    url: https://github.com/minderhq/plugin-sdk/discussions
+    about: If this is about the overall product rather than the CLI specifically, ask in Discussions instead (the core tracker is not public).

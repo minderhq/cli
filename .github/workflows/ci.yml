@@ -14,47 +14,16 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   test:
-    # Always GitHub-hosted: this public repo's self-hosted push CI queued behind
-    # the org runner group's allows_public_repositories=false gate and never ran.
-    # Hosted is free for public repos; fork PRs already ran hosted.
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ${{ fromJSON(github.event_name == 'push' && '["system"]' || '["3.11", "3.12"]') }}
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Verify system Python
-        # Self-hosted runner (Debian 13/trixie): actions/setup-python has no
-        # hosted-tool-cache build for this distro -- only python3.13 is
-        # installed persistently, so a real 3.11/3.12 matrix isn't possible
-        # here (mirrors minderhq/minder's ci.yml fix for the same gap).
-        if: matrix.python-version == 'system'
-        run: python3 --version
-
-      - name: Set up uv
-        # SHA-pinned (org convention since the TruffleHog CVE-2026-33634
-        # incident). Pins the matrix Python via UV_PYTHON (uv fetches a managed
-        # build); the `system` leg passes none, so uv uses the runner's python3.
-        # activate-environment creates a venv (outside the checkout, so
-        # black/flake8/mypy never scan it) and puts it on PATH for later steps
-        # -- `uv pip install` needs a venv rather than the system interpreter.
-        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
-        with:
-          python-version: ${{ matrix.python-version != 'system' && matrix.python-version || '' }}
-          activate-environment: true
-          venv-path: ${{ runner.temp }}/venv
-          enable-cache: true
-          cache-dependency-glob: pyproject.toml
-
-      - run: uv pip install -e ".[dev]"
-      - name: Lint
-        run: |
-          black --check .
-          flake8 --max-line-length=100 --extend-ignore=E203,W503 minder_cli tests
-      - name: Types
-        run: mypy minder_cli
-      - name: Tests
-        run: pytest -q
+    # Shared lint -> type-check -> test pipeline (always GitHub-hosted):
+    # minderhq/.github/.github/workflows/python-ci.yml. Repo-specific checks
+    # that need the installed environment are passed in below.
+    uses: minderhq/.github/.github/workflows/python-ci.yml@main
+    with:
+      python-versions: '["3.11", "3.12"]'
+      lint-paths: minder_cli tests
+      mypy-paths: minder_cli
