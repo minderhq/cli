@@ -19,9 +19,27 @@ from . import __version__, config, output
 from .client import MinderClient, MinderError
 
 
+def _persist_refreshed_token(token: str) -> None:
+    # Best effort: the command still runs with the new token if the cache can't
+    # be written (the warning never includes the token).
+    try:
+        config.save_token(token)
+    except OSError as exc:
+        print(
+            f"warning: could not cache the refreshed token: {type(exc).__name__}",
+            file=sys.stderr,
+        )
+
+
 def _client(args: argparse.Namespace) -> MinderClient:
+    # A refreshed token is cached only when the token came from the config file;
+    # a --token / MINDER_TOKEN override is refreshed for this run only.
     return MinderClient(
-        config.resolve_api_url(args.api_url), token=config.resolve_token(args.token)
+        config.resolve_api_url(args.api_url),
+        token=config.resolve_token(args.token),
+        on_token_refresh=(
+            _persist_refreshed_token if config.token_is_cached(args.token) else None
+        ),
     )
 
 

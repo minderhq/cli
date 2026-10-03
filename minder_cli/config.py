@@ -2,7 +2,8 @@
 
 The config file (``~/.config/minder/config.json``, honouring ``XDG_CONFIG_HOME``)
 caches the token from ``minder login`` and the api-url, so later commands need no
-flags. Env vars ``MINDER_API_URL`` / ``MINDER_TOKEN`` override the file.
+flags; a token the client refreshes is written back to the same file. Env vars
+``MINDER_API_URL`` / ``MINDER_TOKEN`` override the file.
 """
 
 import json
@@ -42,6 +43,12 @@ def resolve_api_url(flag: Optional[str] = None) -> str:
         or load_file().get("api_url")
         or DEFAULT_API_URL
     )
+
+
+def token_is_cached(flag: Optional[str] = None) -> bool:
+    """True when the token in use comes from the config file (no flag/env
+    override) -- only then is a refreshed token written back to it."""
+    return not flag and not os.environ.get("MINDER_TOKEN")
 
 
 def resolve_token(flag: Optional[str] = None) -> Optional[str]:
