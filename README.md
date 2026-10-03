@@ -45,6 +45,8 @@ Global flags (`--api-url`, `--token`, `--json`) go **after** the subcommand (git
 
 Config resolves as **flag → env (`MINDER_API_URL` / `MINDER_TOKEN`) → `~/.config/minder/config.json` → default** (`http://localhost:8000`). `minder login` caches the token + url there so later commands need no flags.
 
+Access tokens are short-lived (15 minutes by default, the gateway's `JWT_EXPIRATION_MINUTES`). The CLI renews them transparently through `POST /v1/auth/refresh`: shortly before the token expires, or once after a `401`. A refreshed token is written back to the same config file; a `--token` / `MINDER_TOKEN` override is refreshed for that run only. The gateway accepts a recently expired token for refresh within `JWT_REFRESH_GRACE_MINUTES` (12 h by default), up to an absolute session cap counted from sign-in, `JWT_SESSION_MAX_HOURS` (24 h by default). After the cap, or when the session was revoked (password change or reset, role demotion, deactivation), the CLI prints ``please run `minder login` again``.
+
 Output is a compact **human view** by default (a bulleted list for collections, `key: value` for objects, plain text for a chat reply); pass **`--json`** for raw JSON to pipe into `jq`.
 
 ## Develop
