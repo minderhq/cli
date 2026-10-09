@@ -13,7 +13,7 @@ authors = [{ name = "minderhq" }]
 dependencies = ["httpx>=0.28.1"]
 
 [project.optional-dependencies]
-dev = ["pytest>=9.1.1", "black>=26.10.0", "flake8>=7.4.1", "mypy>=2.3.1"]
+dev = ["pytest>=9.1.1", "black>=26.10.0", "flake8>=7.4.1", "mypy>=2.4.0"]
 
 [project.scripts]
 minder = "minder_cli.cli:main"
